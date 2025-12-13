@@ -126,6 +126,9 @@
   <data name="CallCompletedJob" xml:space="preserve">
     <value>A completed job was called. If you use JobManager for jobs, consider setting the JobManagerOptions.Clean property to true or setting the Job.Status property to StatusJob.None at the end of the Job.RunAsync method.</value>
   </data>
+  <data name="CallJobManagerInProccess" xml:space="preserve">
+    <value>Jobs in 'JobManager' are already running.</value>
+  </data>
   <data name="UnknownAddStrategy" xml:space="preserve">
     <value>The add strategy must be from the 'AddStrategy' enumeration.</value>
   </data>

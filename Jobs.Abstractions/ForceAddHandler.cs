@@ -2,15 +2,13 @@
 {
     internal sealed class ForceAddHandler : AddHandler
     {
-        public ForceAddHandler(List<Job> jobs, bool disposable, List<Job>? queue) : base(jobs, disposable, queue)
+        public override bool Add(IList<Job> jobs, bool disposable, Job job, bool isProcessing, IList<Job>? queue)
         {
-        }
+            VerifyAndThrow(jobs, job, isProcessing, disposable);
 
-        public override void Add(Job job, bool isProcessing)
-        {
-            VerifyAndThrow(job, isProcessing);
+            jobs.Add(job);
 
-            _jobs.Add(job);
+            return true;
         }
     }
 }

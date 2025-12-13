@@ -88,6 +88,15 @@ namespace Jobs.Abstractions.Resources {
         }
         
         /// <summary>
+        ///   Ищет локализованную строку, похожую на Jobs in &apos;JobManager&apos; are already running..
+        /// </summary>
+        internal static string CallJobManagerInProccess {
+            get {
+                return ResourceManager.GetString("CallJobManagerInProccess", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Ищет локализованную строку, похожую на The add strategy must be from the &apos;AddStrategy&apos; enumeration..
         /// </summary>
         internal static string UnknownAddStrategy {

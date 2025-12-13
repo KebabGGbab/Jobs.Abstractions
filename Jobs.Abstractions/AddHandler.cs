@@ -2,26 +2,19 @@
 
 namespace Jobs.Abstractions
 {
-    internal abstract class AddHandler
+    public abstract class AddHandler
     {
-        protected readonly List<Job> _jobs;
-        protected readonly List<Job>? _queue;
-        protected readonly bool _disposable;
+        public static readonly AddHandler Deferred = new DeferredAddHandler();
+        public static readonly AddHandler Deny = new DenyAddHandler();
+        public static readonly AddHandler Force = new ForceAddHandler();
 
-        public AddHandler(List<Job> jobs, bool disposable, List<Job>? queue = null)
+        public abstract bool Add(IList<Job> jobs, bool disposable, Job job, bool isProcessing, IList<Job>? queue);
+
+        protected static void VerifyAndThrow(IList<Job> jobs, Job job, bool isProcessing, bool disposable)
         {
             ArgumentNullException.ThrowIfNull(jobs, nameof(jobs));
 
-            _jobs = jobs;
-            _queue = queue;
-            _disposable = disposable;
-        }
-
-        public abstract void Add(Job job, bool isProcessing);
-
-        protected void VerifyAndThrow(Job job, bool isProcessing)
-        {
-            if (_disposable && isProcessing)
+            if (disposable && isProcessing)
             {
                 throw new InvalidOperationException(Strings.AddJobInDisposableManager);
             }

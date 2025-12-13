@@ -8,34 +8,20 @@ namespace Jobs.Abstractions
         private readonly List<Job>? _queue;
         private readonly bool _isDisposable;
         private readonly bool _clean;
-        private readonly AddHandler _addHandler;
 
+        private AddHandler _addHandler;
         private int _progress;
 
-        public int Progress 
-        { 
-            get => _progress; 
-            protected set
-            {
-                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, Jobs.Count);
-
-                _progress = value;
-
-                if (value == Jobs.Count)
-                {
-                    Complete();
-                }
-
-            }
-        }
-        public virtual bool IsProcessing { get; protected set; }
+        public int Progress => _progress;
+        public bool IsProcessing { get; protected set; }
         public IReadOnlyList<Job> Jobs => _jobs;
 
         public event EventHandler? Completed;
+        public event EventHandler? JobAdded;
         
-        public JobManager(JobContext context) : this(context, new JobManagerOptions()) { }
+        public JobManager() : this(new JobManagerOptions()) { }
 
-        public JobManager(JobContext context, JobManagerOptions options)
+        public JobManager(JobManagerOptions options)
         { 
             _isDisposable = options.Disposable;
             _clean = options.Clean;
@@ -45,26 +31,58 @@ namespace Jobs.Abstractions
                 _queue = [];
             }
 
-            _addHandler = AddHandlerResolver.Resolve(_jobs, _queue, _isDisposable, options.AddStrategy);
+            _addHandler = options.AddStrategy;
         }
 
-        public JobManager(JobContext context, Job job) : this(context, [job]) { }
+        public JobManager(Job job) : this([job]) { }
 
-        public JobManager(JobContext context, IEnumerable<Job> jobs , JobManagerOptions? options = null) : this(context, options ?? new JobManagerOptions())
+        public JobManager(IEnumerable<Job> jobs , JobManagerOptions? options = null) : this(options ?? new JobManagerOptions())
         {
             ArgumentNullException.ThrowIfNull(jobs, nameof(jobs));
             _jobs.Capacity = jobs.Count();
             _jobs.AddRange(jobs);
         }
 
-        public abstract Task RunAsync();
+        public async Task ExecuteJobsAsync()
+        {
+            if (IsProcessing)
+            {
+                throw new InvalidOperationException(Strings.CallJobManagerInProccess);
+            }
+
+            IsProcessing = true;
+
+            try
+            {
+                await RunJobsAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                IsProcessing = false;
+                Complete();
+            }
+        }
+
+        public abstract Task RunJobsAsync();
 
         public void AddJob(Job job)
         {
-            _addHandler.Add(job, IsProcessing);
+            bool notify = _addHandler.Add(_jobs, _isDisposable, job, IsProcessing, _queue);
+
+            if (notify)
+            {
+                JobAdded?.Invoke(this, EventArgs.Empty);
+            }
         }
 
         public abstract void Cancel();
+
+        public void ChangeAddStrategy(AddHandler strategy)
+        {
+            ArgumentNullException.ThrowIfNull(strategy, nameof(strategy));
+
+            _addHandler = strategy;
+        }
 
         private void Complete()
         {
@@ -82,23 +100,11 @@ namespace Jobs.Abstractions
             }
         }
 
-        protected virtual void OnTaskCompleted(object? sender, EventArgs e)
+
+
+        protected virtual void OnJobCompleted(object? sender, EventArgs e)
         {
             Interlocked.Increment(ref _progress);
-        }
-
-        private static class AddHandlerResolver
-        {
-            public static AddHandler Resolve(List<Job> jobs, List<Job>? queue, bool isDisposable, AddStrategy strategy)
-            {
-                return strategy switch
-                {
-                    AddStrategy.Deferred => new DeferredAddHandler(jobs, isDisposable, queue),
-                    AddStrategy.Deny => new DenyAddHandler(jobs, isDisposable, queue),
-                    AddStrategy.Force => new ForceAddHandler(jobs, isDisposable, queue),
-                    _ =>  throw new InvalidOperationException(Strings.UnknownAddStrategy)
-                };
-            }
         }
     }
 }

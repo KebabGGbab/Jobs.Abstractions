@@ -2,22 +2,23 @@
 {
     internal sealed class DeferredAddHandler : AddHandler
     {
-        public DeferredAddHandler(List<Job> jobs, bool disposable, List<Job>? queue) : base(jobs, disposable, queue)
+        public override bool Add(IList<Job> jobs, bool disposable, Job job, bool isProcessing, IList<Job>? queue)
         {
             ArgumentNullException.ThrowIfNull(queue, nameof(queue));
-        }
 
-        public override void Add(Job job, bool isProcessing)
-        {
-            VerifyAndThrow(job, isProcessing);
+            VerifyAndThrow(jobs, job, isProcessing, disposable);
 
             if (isProcessing)
             {
-                _queue!.Add(job);
+                queue.Add(job);
+
+                return false;
             }
             else
             {
-                _jobs.Add(job);
+                jobs.Add(job);
+
+                return true;
             }
         }
     }
