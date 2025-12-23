@@ -4,8 +4,7 @@ namespace Jobs.Abstractions
 {
     public abstract class Job
     {
-        public StatusJob Status { get; protected set; }
-        public bool? IsSuccess { get; protected set; }
+        public StatusJob Status { get; private set; }
 
         public event EventHandler? Completed;
 
@@ -25,7 +24,7 @@ namespace Jobs.Abstractions
             }
             catch (OperationCanceledException)
             {
-                Complete(false);
+                Complete(null);
             }
             catch
             {
@@ -36,15 +35,14 @@ namespace Jobs.Abstractions
 
         protected abstract Task RunAsync(RunArgs args, CancellationToken? cancellation);
 
-        protected void Complete(bool success)
+        private void Complete(bool? success)
         {
-            if (Status is StatusJob.Completed or StatusJob.Canceled)
+            Status = success switch
             {
-                return;
-            }
-
-            IsSuccess = success;
-            Status = success ? StatusJob.Completed : StatusJob.Canceled;
+                true => StatusJob.Completed,
+                false => StatusJob.Unsuccessful,
+                null => StatusJob.Canceled
+            };
 
             Completed?.Invoke(this, EventArgs.Empty);
         }

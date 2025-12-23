@@ -5,6 +5,7 @@
         None = 0,
         Proccess = 1,
         Completed= 2,
-        Canceled = 3,
+        Unsuccessful = 3,
+        Canceled = 4,
     }
 }
