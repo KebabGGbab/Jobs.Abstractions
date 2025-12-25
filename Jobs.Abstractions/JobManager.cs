@@ -8,7 +8,7 @@ namespace Jobs.Abstractions
         private readonly List<Job>? _queue;
         private readonly bool _isDisposable;
         private readonly bool _clean;
-
+       
         private AddHandler _addHandler;
         private int _progress;
 
@@ -19,7 +19,21 @@ namespace Jobs.Abstractions
         public event EventHandler? Completed;
         public event EventHandler? JobAdded;
         
-        public JobManager() : this(new JobManagerOptions()) { }
+        public JobManager() 
+            : this(new JobManagerOptions()) { }
+
+
+        public JobManager(Job job) 
+            : this([job]) { }
+
+        public JobManager(IEnumerable<Job> jobs) 
+            : this(new JobManagerOptions())
+        {
+            ArgumentNullException.ThrowIfNull(jobs, nameof(jobs));
+
+            _jobs.Capacity = jobs.Count();
+            _jobs.AddRange(jobs);
+        }
 
         public JobManager(JobManagerOptions options)
         { 
@@ -34,16 +48,7 @@ namespace Jobs.Abstractions
             _addHandler = options.AddStrategy;
         }
 
-        public JobManager(Job job) : this([job]) { }
-
-        public JobManager(IEnumerable<Job> jobs , JobManagerOptions? options = null) : this(options ?? new JobManagerOptions())
-        {
-            ArgumentNullException.ThrowIfNull(jobs, nameof(jobs));
-            _jobs.Capacity = jobs.Count();
-            _jobs.AddRange(jobs);
-        }
-
-        public async Task ExecuteJobsAsync()
+        public async Task ExecuteJobsAsync(RunArgs args)
         {
             if (IsProcessing)
             {
@@ -54,7 +59,7 @@ namespace Jobs.Abstractions
 
             try
             {
-                await RunJobsAsync().ConfigureAwait(false);
+                await RunJobsAsync(args).ConfigureAwait(false);
             }
             finally
             {
@@ -63,13 +68,11 @@ namespace Jobs.Abstractions
             }
         }
 
-        public abstract Task RunJobsAsync();
+        public abstract Task RunJobsAsync(RunArgs args);
 
         public void AddJob(Job job)
         {
-            bool notify = _addHandler.Add(_jobs, _isDisposable, job, IsProcessing, _queue);
-
-            if (notify)
+            if (_addHandler.Add(_jobs, _isDisposable, job, IsProcessing, _queue))
             {
                 JobAdded?.Invoke(this, EventArgs.Empty);
             }
@@ -99,8 +102,6 @@ namespace Jobs.Abstractions
                 _queue.Clear();
             }
         }
-
-
 
         protected virtual void OnJobCompleted(object? sender, EventArgs e)
         {
