@@ -2,10 +2,10 @@
 
 namespace Jobs.Abstractions
 {
-    public abstract class JobManager
+    public abstract class JobManager<T> where T : Job
     {
-        private readonly List<Job> _jobs = [];
-        private readonly List<Job>? _queue;
+        private readonly List<T> _jobs = [];
+        private readonly List<T>? _queue;
         private readonly bool _isDisposable;
         private readonly bool _clean;
        
@@ -14,25 +14,14 @@ namespace Jobs.Abstractions
 
         public int Progress => _progress;
         public bool IsProcessing { get; protected set; }
-        public IReadOnlyList<Job> Jobs => _jobs;
+        public IReadOnlyList<T> Jobs => _jobs;
 
         public event EventHandler? Completed;
         public event EventHandler? JobAdded;
         
         public JobManager() 
-            : this(new JobManagerOptions()) { }
-
-
-        public JobManager(Job job) 
-            : this([job]) { }
-
-        public JobManager(IEnumerable<Job> jobs) 
             : this(new JobManagerOptions())
         {
-            ArgumentNullException.ThrowIfNull(jobs, nameof(jobs));
-
-            _jobs.Capacity = jobs.Count();
-            _jobs.AddRange(jobs);
         }
 
         public JobManager(JobManagerOptions options)
@@ -46,6 +35,15 @@ namespace Jobs.Abstractions
             }
 
             _addHandler = options.AddStrategy;
+        }
+
+        public JobManager(IEnumerable<T> jobs, JobManagerOptions? options = null)
+            : this(options ?? new JobManagerOptions())
+        {
+            ArgumentNullException.ThrowIfNull(jobs, nameof(jobs));
+
+            _jobs.Capacity = jobs.Count();
+            _jobs.AddRange(jobs);
         }
 
         public async Task ExecuteJobsAsync(RunArgs args)
@@ -70,7 +68,7 @@ namespace Jobs.Abstractions
 
         public abstract Task RunJobsAsync(RunArgs args);
 
-        public void AddJob(Job job)
+        public void AddJob(T job)
         {
             if (_addHandler.Add(_jobs, _isDisposable, job, IsProcessing, _queue))
             {

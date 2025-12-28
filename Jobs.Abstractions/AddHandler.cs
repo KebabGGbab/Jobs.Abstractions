@@ -8,9 +8,9 @@ namespace Jobs.Abstractions
         public static readonly AddHandler Deny = new DenyAddHandler();
         public static readonly AddHandler Force = new ForceAddHandler();
 
-        public abstract bool Add(IList<Job> jobs, bool disposable, Job job, bool isProcessing, IList<Job>? queue);
+        public abstract bool Add<T>(IList<T> jobs, bool disposable, T job, bool isProcessing, IList<T>? queue) where T : Job;
 
-        protected static void VerifyAndThrow(IList<Job> jobs, Job job, bool isProcessing, bool disposable)
+        protected static void VerifyAndThrow<T>(IList<T> jobs, T job, bool isProcessing, bool disposable) where T : Job
         {
             ArgumentNullException.ThrowIfNull(jobs, nameof(jobs));
 

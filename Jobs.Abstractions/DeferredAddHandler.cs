@@ -2,7 +2,7 @@
 {
     internal sealed class DeferredAddHandler : AddHandler
     {
-        public override bool Add(IList<Job> jobs, bool disposable, Job job, bool isProcessing, IList<Job>? queue)
+        public override bool Add<T>(IList<T> jobs, bool disposable, T job, bool isProcessing, IList<T>? queue)
         {
             ArgumentNullException.ThrowIfNull(queue, nameof(queue));
 
