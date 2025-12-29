@@ -1,10 +1,15 @@
 ﻿using Jobs.Abstractions.Resources;
+using KebabGGbab.ComponentModel;
 
 namespace Jobs.Abstractions
 {
-    public abstract class Job
+    public abstract class Job : ObservableObject
     {
-        public StatusJob Status { get; private set; }
+        public StatusJob Status 
+        {
+            get => field;
+            private set => OnPropertyChanged(ref field, value);
+        }
 
         public event EventHandler? Completed;
 

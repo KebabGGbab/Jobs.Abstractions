@@ -7,6 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Reference Include="KebabGGbab.ComponentModel">
+      <HintPath>..\..\KebabGGbab.ComponentModel\KebabGGbab.ComponentModel\bin\Debug\net10.0\KebabGGbab.ComponentModel.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Update="Resources\Strings.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>

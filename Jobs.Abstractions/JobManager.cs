@@ -1,19 +1,31 @@
 ﻿using Jobs.Abstractions.Resources;
+using KebabGGbab.ComponentModel;
 
 namespace Jobs.Abstractions
 {
-    public abstract class JobManager<T> where T : Job
+    public abstract class JobManager<T> : ObservableObject where T : Job
     {
         private readonly List<T> _jobs = [];
         private readonly List<T>? _queue;
         private readonly bool _isDisposable;
         private readonly bool _clean;
+        private readonly Lock _lock = new();
        
         private AddHandler _addHandler;
-        private int _progress;
 
-        public int Progress => _progress;
-        public bool IsProcessing { get; protected set; }
+        public int Progress
+        {
+            get => field;
+            private set => OnPropertyChanged(ref field, value); 
+
+        }
+
+        public bool IsProcessing 
+        { 
+            get => field;
+            private set => OnPropertyChanged(ref field, value); 
+        }
+
         public IReadOnlyList<T> Jobs => _jobs;
 
         public event EventHandler? Completed;
@@ -42,8 +54,13 @@ namespace Jobs.Abstractions
         {
             ArgumentNullException.ThrowIfNull(jobs, nameof(jobs));
 
-            _jobs.Capacity = jobs.Count();
             _jobs.AddRange(jobs);
+
+            foreach (Job job in jobs)
+            {
+                job.Completed += OnJobCompleted;
+            }
+
         }
 
         public async Task ExecuteJobsAsync(RunArgs args)
@@ -101,9 +118,17 @@ namespace Jobs.Abstractions
             }
         }
 
-        protected virtual void OnJobCompleted(object? sender, EventArgs e)
+        private void OnJobCompleted(object? sender, EventArgs e)
         {
-            Interlocked.Increment(ref _progress);
+            lock (_lock)
+            {
+                Progress++;
+            }
+
+            if (_isDisposable)
+            {
+                ((Job)sender!).Completed -= OnJobCompleted;
+            }
         }
     }
 }
